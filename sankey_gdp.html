@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>日本のGDP 609兆円の流れ - サンキーダイアグラム</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08090f;--surface:#0e1018;--text:#b8c4dd;--dim:#4a5878;--accent:#5ca4e8;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.header{text-align:center;padding:2rem 1rem 1rem;}
+.header h1{font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:0.05em;}
+.header .sub{font-size:0.75rem;color:var(--dim);margin-top:0.3rem;}
+.wrap{max-width:1000px;margin:0 auto;padding:0.5rem 1rem 2rem;position:relative;}
+canvas{width:100%;display:block;}
+.tooltip{position:absolute;background:rgba(14,16,24,0.95);border:1px solid #2a3555;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.75rem;pointer-events:none;opacity:0;transition:opacity 0.15s;z-index:10;max-width:250px;line-height:1.5;}
+.tooltip .tv{font-family:'DM Mono',monospace;font-weight:700;font-size:0.9rem;color:#fff;}
+.tooltip .tl{color:var(--dim);font-size:0.65rem;}
+.legend-wrap{display:flex;justify-content:center;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;font-size:0.7rem;color:var(--dim);}
+.leg{display:flex;align-items:center;gap:4px;}
+.leg span{width:14px;height:8px;border-radius:2px;display:inline-block;}
+.note{max-width:800px;margin:1.5rem auto 0;padding:0 1rem;font-size:0.68rem;color:var(--dim);line-height:1.6;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>日本のGDP 609兆円はどこへ流れるか</h1>
+  <div class="sub">2024年 名目GDP（支出側）のサンキーダイアグラム</div>
+</div>
+
+<div class="wrap">
+  <canvas id="sankey"></canvas>
+  <div class="tooltip" id="tip"></div>
+</div>
+
+<div class="legend-wrap">
+  <div class="leg"><span style="background:#5ca4e8"></span>GDP総額</div>
+  <div class="leg"><span style="background:#e8a05c"></span>民間支出</div>
+  <div class="leg"><span style="background:#6bc9a0"></span>政府支出</div>
+  <div class="leg"><span style="background:#c97bb8"></span>投資</div>
+  <div class="leg"><span style="background:#e86070"></span>純輸出</div>
+  <div class="leg"><span style="background:#8898c8"></span>分配先</div>
+</div>
+
+<div class="note">
+データ出典: 内閣府「2024年 四半期別GDP速報」名目値。純輸出がマイナス（輸入超過）の場合、図では便宜上細い線で表示。雇用者報酬・営業余剰等の分配面は2023年度確報値を2024年名目GDP比で按分した概算。
+</div>
+
+<script>
+// === DATA ===
+// Level 0 -> Level 1 (GDP -> expenditure categories)
+// Level 1 -> Level 2 (categories -> subcategories)
+// 2024 nominal GDP: 609 trillion yen
+
+const nodes = [
+  // Level 0
+  {id:'gdp', label:'名目GDP', value:609, level:0, color:'#5ca4e8'},
+  // Level 1 - Expenditure
+  {id:'private_cons', label:'民間最終消費', value:308, level:1, color:'#e8a05c'},
+  {id:'gov_cons', label:'政府最終消費', value:125, level:1, color:'#6bc9a0'},
+  {id:'private_inv', label:'民間投資', value:110, level:1, color:'#c97bb8'},
+  {id:'public_inv', label:'公的投資', value:32, level:1, color:'#8e7bc9'},
+  {id:'net_export', label:'純輸出', value:3, level:1, color:'#e86070'},
+  {id:'stat_disc', label:'在庫・誤差', value:31, level:1, color:'#666e88'},
+  // Level 2 - Subcategories
+  {id:'food', label:'食料・飲料', value:75, level:2, color:'#e8b85c'},
+  {id:'housing', label:'住居・光熱', value:62, level:2, color:'#d89840'},
+  {id:'transport', label:'交通・通信', value:55, level:2, color:'#c88840'},
+  {id:'other_cons', label:'娯楽・教育・他', value:116, level:2, color:'#b87830'},
+  {id:'social_sec', label:'社会保障', value:80, level:2, color:'#50b882'},
+  {id:'defense_other', label:'防衛・行政・他', value:45, level:2, color:'#40a868'},
+  {id:'equip', label:'設備投資', value:98, level:2, color:'#b868a8'},
+  {id:'res_inv', label:'住宅投資', value:12, level:2, color:'#a858a0'},
+  {id:'pub_infra', label:'公共事業', value:32, level:2, color:'#7868b8'},
+  {id:'exports', label:'輸出 106兆円', value:3, level:2, color:'#d85060'},
+];
+
+const links = [
+  // GDP -> Level 1
+  {from:'gdp', to:'private_cons', value:308},
+  {from:'gdp', to:'gov_cons', value:125},
+  {from:'gdp', to:'private_inv', value:110},
+  {from:'gdp', to:'public_inv', value:32},
+  {from:'gdp', to:'net_export', value:3},
+  {from:'gdp', to:'stat_disc', value:31},
+  // Private consumption -> sub
+  {from:'private_cons', to:'food', value:75},
+  {from:'private_cons', to:'housing', value:62},
+  {from:'private_cons', to:'transport', value:55},
+  {from:'private_cons', to:'other_cons', value:116},
+  // Gov consumption -> sub
+  {from:'gov_cons', to:'social_sec', value:80},
+  {from:'gov_cons', to:'defense_other', value:45},
+  // Private investment -> sub
+  {from:'private_inv', to:'equip', value:98},
+  {from:'private_inv', to:'res_inv', value:12},
+  // Public investment -> sub
+  {from:'public_inv', to:'pub_infra', value:32},
+  // Net export -> sub
+  {from:'net_export', to:'exports', value:3},
+];
+
+// === LAYOUT ===
+const canvas = document.getElementById('sankey');
+const ctx = canvas.getContext('2d');
+const tip = document.getElementById('tip');
+const dpr = window.devicePixelRatio || 1;
+
+let W, H, nodeMap, linkRects=[];
+
+function layout(){
+  const rect = canvas.getBoundingClientRect();
+  W = rect.width; H = Math.max(520, W * 0.52);
+  canvas.style.height = H + 'px';
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const padL=120, padR=90, padT=30, padB=30;
+  const colW = (W - padL - padR) / 2;
+  const nodeW = 18;
+  const colX = [padL, padL + colW, padL + colW*2];
+  const usableH = H - padT - padB;
+
+  // Assign positions
+  nodeMap = {};
+  nodes.forEach(n => nodeMap[n.id] = {...n, x:0, y:0, h:0, inOff:0, outOff:0});
+
+  // Level 0
+  nodeMap['gdp'].x = colX[0]; nodeMap['gdp'].y = padT; nodeMap['gdp'].h = usableH;
+
+  // Level 1 - proportional heights
+  const l1 = ['private_cons','gov_cons','private_inv','public_inv','net_export','stat_disc'];
+  const l1Total = l1.reduce((s,id)=>s+nodeMap[id].value,0);
+  const l1Gap = 8;
+  const l1Avail = usableH - (l1.length-1)*l1Gap;
+  let cy = padT;
+  l1.forEach(id => {
+    const n = nodeMap[id];
+    n.h = Math.max(4, (n.value/l1Total)*l1Avail);
+    n.x = colX[1]; n.y = cy;
+    cy += n.h + l1Gap;
+  });
+
+  // Level 2
+  const l2Groups = {
+    'private_cons': ['food','housing','transport','other_cons'],
+    'gov_cons': ['social_sec','defense_other'],
+    'private_inv': ['equip','res_inv'],
+    'public_inv': ['pub_infra'],
+    'net_export': ['exports'],
+  };
+  const l2Gap = 5;
+  Object.entries(l2Groups).forEach(([parent, children]) => {
+    const pn = nodeMap[parent];
+    const cTotal = children.reduce((s,id)=>s+nodeMap[id].value,0);
+    const gaps = (children.length-1)*l2Gap;
+    const avail = pn.h - gaps;
+    let cy2 = pn.y;
+    children.forEach(id => {
+      const n = nodeMap[id];
+      n.h = Math.max(3, (n.value/cTotal)*avail);
+      n.x = colX[2]; n.y = cy2;
+      cy2 += n.h + l2Gap;
+    });
+  });
+
+  return {nodeW, colX, padT, padB, usableH};
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return [r,g,b];
+}
+
+function drawFlow(fromN, toN, value, nodeW){
+  const totalFrom = links.filter(l=>l.from===fromN.id).reduce((s,l)=>s+l.value,0);
+  const totalTo = links.filter(l=>l.to===toN.id).reduce((s,l)=>s+l.value,0);
+  const hFrom = (value/totalFrom)*fromN.h;
+  const hTo = (value/totalTo)*toN.h;
+  const x0 = fromN.x + nodeW;
+  const x1 = toN.x;
+  const y0 = fromN.y + fromN.outOff;
+  const y1 = toN.y + toN.inOff;
+  fromN.outOff += hFrom;
+  toN.inOff += hTo;
+
+  const cp = (x1-x0)*0.5;
+  const [r0,g0,b0] = hexToRgb(fromN.color);
+  const [r1,g1,b1] = hexToRgb(toN.color);
+
+  const grad = ctx.createLinearGradient(x0,0,x1,0);
+  grad.addColorStop(0, `rgba(${r0},${g0},${b0},0.35)`);
+  grad.addColorStop(1, `rgba(${r1},${g1},${b1},0.35)`);
+
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.bezierCurveTo(x0+cp, y0, x1-cp, y1, x1, y1);
+  ctx.lineTo(x1, y1+hTo);
+  ctx.bezierCurveTo(x1-cp, y1+hTo, x0+cp, y0+hFrom, x0, y0+hFrom);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // store for hover
+  linkRects.push({x0,x1,y0t:y0,y0b:y0+hFrom,y1t:y1,y1b:y1+hTo, fromN, toN, value});
+}
+
+function draw(){
+  const {nodeW} = layout();
+  ctx.clearRect(0,0,W,H);
+  linkRects = [];
+
+  // Reset offsets
+  Object.values(nodeMap).forEach(n=>{n.inOff=0;n.outOff=0;});
+
+  // Draw links
+  links.forEach(l => {
+    drawFlow(nodeMap[l.from], nodeMap[l.to], l.value, nodeW);
+  });
+
+  // Draw nodes
+  Object.values(nodeMap).forEach(n => {
+    const [r,g,b] = hexToRgb(n.color);
+    const grad = ctx.createLinearGradient(n.x, n.y, n.x, n.y+n.h);
+    grad.addColorStop(0, `rgba(${r},${g},${b},0.9)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0.6)`);
+    ctx.fillStyle = grad;
+
+    // rounded rect
+    const rr = Math.min(4, n.h/2);
+    ctx.beginPath();
+    ctx.moveTo(n.x+rr, n.y);
+    ctx.lineTo(n.x+nodeW-rr, n.y);
+    ctx.quadraticCurveTo(n.x+nodeW, n.y, n.x+nodeW, n.y+rr);
+    ctx.lineTo(n.x+nodeW, n.y+n.h-rr);
+    ctx.quadraticCurveTo(n.x+nodeW, n.y+n.h, n.x+nodeW-rr, n.y+n.h);
+    ctx.lineTo(n.x+rr, n.y+n.h);
+    ctx.quadraticCurveTo(n.x, n.y+n.h, n.x, n.y+n.h-rr);
+    ctx.lineTo(n.x, n.y+rr);
+    ctx.quadraticCurveTo(n.x, n.y, n.x+rr, n.y);
+    ctx.closePath();
+    ctx.fill();
+
+    // glow
+    ctx.shadowColor = `rgba(${r},${g},${b},0.3)`;
+    ctx.shadowBlur = 12;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Labels
+    const midY = n.y + n.h/2;
+    ctx.font = '700 11px "Noto Sans JP"';
+    ctx.textBaseline = 'middle';
+
+    if(n.level === 0){
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(n.label, n.x - 8, midY - 10);
+      ctx.font = '500 13px "DM Mono"';
+      ctx.fillStyle = n.color;
+      ctx.fillText(n.value + '兆円', n.x - 8, midY + 10);
+    } else if(n.level === 1){
+      // label above or to left if space
+      if(n.h > 30){
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(n.label, n.x + nodeW/2, midY - 8);
+        ctx.font = '500 10px "DM Mono"';
+        ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+        ctx.fillText(n.value + '兆', n.x + nodeW/2, midY + 8);
+      } else {
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#ccc';
+        ctx.font = '400 9px "Noto Sans JP"';
+        ctx.fillText(n.label + ' ' + n.value + '兆', n.x + nodeW/2, n.y - 5);
+      }
+    } else {
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ddd';
+      ctx.font = '400 10px "Noto Sans JP"';
+      const lx = n.x + nodeW + 6;
+      if(n.h > 18){
+        ctx.fillText(n.label, lx, midY - 7);
+        ctx.font = '500 10px "DM Mono"';
+        ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+        ctx.fillText(n.value + '兆円', lx, midY + 8);
+      } else {
+        ctx.fillText(n.label + ' ' + n.value + '兆', lx, midY);
+      }
+    }
+  });
+
+  // Column headers
+  ctx.font = '300 10px "Noto Sans JP"';
+  ctx.fillStyle = '#4a5878';
+  ctx.textAlign = 'center';
+  const {colX} = {colX:[nodeMap['gdp'].x + 9, nodeMap['private_cons'].x + 9, nodeMap['food'].x + 9]};
+  ctx.fillText('総額', nodeMap['gdp'].x + 9, 18);
+  ctx.fillText('支出項目', nodeMap['private_cons'].x + 9, 18);
+  ctx.fillText('内訳', nodeMap['food'].x + 9, 18);
+}
+
+// Hover
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  let found = false;
+  for(const lr of linkRects){
+    const frac = (mx - lr.x0)/(lr.x1 - lr.x0);
+    if(frac < 0 || frac > 1) continue;
+    const yt = lr.y0t + (lr.y1t - lr.y0t)*frac;
+    const yb = lr.y0b + (lr.y1b - lr.y0b)*frac;
+    if(my >= yt - 2 && my <= yb + 2){
+      tip.style.opacity = '1';
+      tip.style.left = (mx + 12) + 'px';
+      tip.style.top = (my - 10) + 'px';
+      const pct = (lr.value / 609 * 100).toFixed(1);
+      tip.innerHTML = `<div style="color:${lr.toN.color}">${lr.fromN.label} → ${lr.toN.label}</div><div class="tv">${lr.value}兆円</div><div class="tl">GDP比 ${pct}%</div>`;
+      found = true;
+      break;
+    }
+  }
+  if(!found) tip.style.opacity = '0';
+});
+canvas.addEventListener('mouseleave', ()=> tip.style.opacity='0');
+
+window.addEventListener('resize', draw);
+draw();
+</script>
+</body>
+</html>

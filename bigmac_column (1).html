@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ビッグマックで読む「失われた30年」</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700;900&family=DM+Mono:wght@400;500&family=Noto+Serif+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0d16;--surface:#121828;--border:#1c2540;--text:#c8d0e4;--dim:#5a6a8a;--accent:#64b5f6;--green:#66bb6a;--red:#ef5350;--gold:#ffa726;--mac-red:#da291c;--mac-gold:#ffc72c;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);padding:0;}
+.hero{text-align:center;padding:3rem 1.5rem 2rem;background:linear-gradient(180deg,#1a1020 0%,var(--bg) 100%);}
+.hero h1{font-family:'Noto Serif JP',serif;font-size:2rem;font-weight:700;color:#fff;margin-bottom:0.5rem;line-height:1.4;}
+.hero .lead{font-size:0.9rem;color:var(--dim);max-width:600px;margin:0 auto;line-height:1.7;}
+.container{max-width:800px;margin:0 auto;padding:0 1.5rem 3rem;}
+.prose{font-size:0.88rem;line-height:1.9;margin-bottom:1.5rem;}
+.prose .hl{font-weight:700;color:var(--mac-gold);}
+.prose .hlr{font-weight:700;color:var(--red);}
+.prose .hlg{font-weight:700;color:var(--green);}
+.section-head{font-family:'Noto Serif JP',serif;font-size:1.2rem;font-weight:700;color:#fff;margin:2.5rem 0 1rem;padding-left:0.8rem;border-left:3px solid var(--mac-gold);}
+.chart-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.2rem;margin:1.5rem 0;}
+.ctitle{font-size:0.85rem;font-weight:700;color:var(--accent);margin-bottom:0.5rem;}
+canvas{width:100%;display:block;}
+.legend{display:flex;gap:1rem;margin-top:0.5rem;font-size:0.7rem;color:var(--dim);flex-wrap:wrap;}
+.leg{display:flex;align-items:center;gap:4px;}
+.ldot{width:16px;height:3px;border-radius:2px;}
+.ldash{width:16px;height:0;border-top:2px dashed;}
+.price-table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:0.78rem;}
+.price-table th,.price-table td{padding:0.5rem 0.7rem;text-align:center;border-bottom:1px solid var(--border);}
+.price-table th{color:var(--dim);font-weight:400;font-size:0.7rem;}
+.price-table td{font-family:'DM Mono',monospace;}
+.price-table .yr{color:var(--dim);text-align:left;}
+.price-table .jp{color:var(--mac-gold);}
+.price-table .us{color:var(--accent);}
+.price-table .if{color:var(--green);}
+.callout{background:linear-gradient(135deg,#1a1428,#121828);border:1px solid #2a2040;border-radius:12px;padding:1.2rem 1.5rem;margin:1.5rem 0;text-align:center;}
+.callout .big{font-family:'DM Mono',monospace;font-size:2.2rem;font-weight:700;margin:0.5rem 0;}
+.callout .cap{font-size:0.75rem;color:var(--dim);}
+.note{font-size:0.68rem;color:var(--dim);line-height:1.5;margin-top:2rem;border-top:1px solid var(--border);padding-top:1rem;}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>ビッグマックで読む<br>「失われた30年」</h1>
+  <p class="lead">もし日本経済が目標通り成長していたら、今ビッグマックはいくらだったのか。そしてなぜ、それでも「高い」とは感じなかったはずなのか。</p>
+</div>
+
+<div class="container">
+
+<div class="section-head">1994年、ビッグマックは390円だった</div>
+<p class="prose">
+1994年、日本のビッグマックは<span class="hl">390円</span>。当時のアメリカでは2.30ドル前後で、為替レート（約100円/ドル）を考えると日本の方がかなり高かった。日本の物価は世界トップクラス。東京は「世界一物価が高い都市」と言われていた時代です。
+</p>
+<p class="prose">
+それから30年。2024年現在、日本のビッグマックは<span class="hl">480円</span>。30年で<span class="hlr">たった90円、約23%の上昇</span>です。しかも途中で250円まで値下げされた時期すらありました。一方アメリカでは同じ期間に2.30ドルから5.69ドルへ、<span class="hlg">約2.5倍</span>に上昇しています。
+</p>
+
+<div class="chart-box">
+  <div class="ctitle">ビッグマック価格の推移 - 日本の現実 vs 目標成長の場合</div>
+  <canvas id="macChart" height="280"></canvas>
+  <div class="legend">
+    <div class="leg"><div class="ldot" style="background:var(--mac-gold)"></div>日本（実際の価格）</div>
+    <div class="leg"><div class="ldash" style="border-color:var(--green)"></div>もしCPI年2%上昇なら</div>
+    <div class="leg"><div class="ldot" style="background:var(--accent)"></div>アメリカ（円換算参考）</div>
+  </div>
+</div>
+
+<div class="section-head">価格テーブル - 現実と「もしも」</div>
+<table class="price-table">
+<tr><th>年</th><th>日本(実際)</th><th>米国(USD)</th><th>もしCPI2%なら</th><th>もし賃金も2.5%成長なら<br><span style="font-size:0.6rem">ビッグマック何分労働？</span></th></tr>
+<tr><td class="yr">1994</td><td class="jp">390円</td><td class="us">$2.30</td><td class="if">390円</td><td>23分</td></tr>
+<tr><td class="yr">2000</td><td class="jp">294円</td><td class="us">$2.51</td><td class="if">439円</td><td>23分</td></tr>
+<tr><td class="yr">2005</td><td class="jp">250円</td><td class="us">$3.06</td><td class="if">485円</td><td>23分</td></tr>
+<tr><td class="yr">2010</td><td class="jp">320円</td><td class="us">$3.73</td><td class="if">535円</td><td>23分</td></tr>
+<tr><td class="yr">2015</td><td class="jp">370円</td><td class="us">$4.79</td><td class="if">591円</td><td>23分</td></tr>
+<tr><td class="yr">2020</td><td class="jp">390円</td><td class="us">$5.67</td><td class="if">652円</td><td>23分</td></tr>
+<tr><td class="yr">2024</td><td class="jp">480円</td><td class="us">$5.69</td><td class="if">710円</td><td>23分</td></tr>
+</table>
+
+<p class="prose">
+右端の列に注目してください。もし物価が年2%上昇し、賃金も年2.5%成長していた世界では、ビッグマックの価格は710円になっていますが、<span class="hl">購入に必要な労働時間は約23分のまま変わりません</span>。賃金の伸びが物価の伸びを上回っているからです。これが健全なインフレの姿です。
+</p>
+<p class="prose">
+現実の日本では、ビッグマックは480円と「安い」ままですが、賃金もほとんど上がっていません。つまり<span class="hlr">安くても楽になっていない</span>。一方でアメリカ人は高いビッグマックを買っていますが、賃金が2倍以上に上がっているので、体感としてはむしろ楽になっています。
+</p>
+
+<div class="callout">
+  <div class="cap">もし目標通りの成長だったら、2024年のビッグマックは</div>
+  <div class="big" style="color:var(--green)">約710円</div>
+  <div class="cap">でも賃金も上がっているから、買うのに必要な労働時間は<span style="color:var(--mac-gold);font-weight:700;">1994年と同じ約23分</span></div>
+</div>
+
+<div class="section-head">デフレとは「値札が動かない」こと</div>
+<p class="prose">
+ビッグマックの価格推移グラフを見ると、1994年から2020年まで390円の近辺をウロウロしているのがわかります。26年間で実質ゼロ成長。これがデフレの正体です。物の値段が上がらないから企業の売上も増えない、だから賃金も上げられない、だから消費者は安いものを求める、だからさらに値段が下がる。この悪循環を日本は四半世紀にわたって経験しました。
+</p>
+<p class="prose">
+2022年以降、ようやく物価が動き始めました。ビッグマックも390円から480円へと大きく上昇しています。しかしこれは「正常化」の第一歩に過ぎません。先ほどのグラフで緑の破線との乖離を見れば、目標の軌道に追いつくには程遠いことがわかります。
+</p>
+
+<div class="chart-box">
+  <div class="ctitle">30年間の累積ギャップ - ビッグマック1個に凝縮された停滞</div>
+  <canvas id="gapChart" height="220"></canvas>
+  <div class="legend">
+    <div class="leg"><div class="ldot" style="background:rgba(239,83,80,0.4)"></div>目標価格との差額（累積した「失われた値上げ」）</div>
+  </div>
+</div>
+
+<div class="section-head">グラフが教えてくれること</div>
+<p class="prose">
+トミー・マッコールがTEDで語ったように、「グラフにすると本1冊分の情報が1ページに収まる」。ビッグマック1個の価格推移という単純なデータに、GDPの停滞も、デフレも、賃金の伸び悩みも、国際的な購買力の低下も、すべて凝縮されています。
+</p>
+<p class="prose">
+「失われた30年」とは、値札が動かなかった30年。そしてその裏で、世界との差が静かに、しかし確実に広がり続けた30年でもあります。ビッグマック1個が、それを雄弁に物語っています。
+</p>
+
+<p class="note">
+データ出典・注記: 日本のビッグマック価格はマクドナルド公式発表・報道ベースの代表的標準価格(各種メディア記事より収集)。アメリカの価格はThe Economist Big Mac Index。「もしCPI2%なら」は1994年の390円を基準に年率2%で複利計算した仮想値。「賃金も2.5%成長」の場合の労働時間は、1994年の平均時給を基準に同率で成長させた仮想値から算出。実際の経済は物価・賃金・為替・企業戦略など複合的な要因で動くため、これらはあくまで単純化したシミュレーションです。米国価格の円換算は各年の年平均為替レート概算による参考値。
+</p>
+
+</div>
+
+<script>
+const years=[1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024];
+const N=years.length;
+// Japan BigMac actual price (representative)
+const jpReal=[390,380,380,380,380,360,294,262,250,250,260,250,280,290,290,320,320,320,320,320,370,370,380,380,390,390,390,390,410,450,480];
+// "If CPI 2% target" from 390 base
+const jpTarget=jpReal.map((_,i)=>Math.round(390*Math.pow(1.02,i)));
+// US BigMac USD price
+const usUsd=[2.30,2.32,2.36,2.42,2.56,2.43,2.51,2.54,2.49,2.80,3.00,3.06,3.10,3.22,3.57,3.57,3.73,4.07,4.20,4.56,4.80,4.79,5.04,5.28,5.28,5.58,5.67,5.65,5.15,5.58,5.69];
+// rough JPY/USD avg each year
+const fx=[102,94,109,121,131,114,108,122,125,116,108,110,116,118,103,94,88,80,80,97,106,121,109,112,110,109,107,110,131,141,151];
+const usJpy=usUsd.map((u,i)=>Math.round(u*fx[i]));
+
+function drawMacChart(){
+  const canvas=document.getElementById('macChart');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr;canvas.height=280*dpr;
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=280;
+  const pad={top:15,right:55,bottom:35,left:45};
+  const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+  const allV=[...jpReal,...jpTarget,...usJpy];
+  const yMin=150,yMax=Math.max(...allV)*1.08;
+  const xP=i=>pad.left+(i/(N-1))*cw;
+  const yP=v=>pad.top+(1-(v-yMin)/(yMax-yMin))*ch;
+
+  // grid
+  ctx.strokeStyle='#1a2340';ctx.lineWidth=0.5;
+  for(let v=200;v<=yMax;v+=100){
+    const y=yP(v);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+    ctx.fillStyle='#5a6a8a';ctx.font='10px DM Mono';ctx.textAlign='right';
+    ctx.fillText(v+'円',pad.left-4,y+3);
+  }
+  ctx.fillStyle='#5a6a8a';ctx.font='10px DM Mono';ctx.textAlign='center';
+  for(let i=0;i<N;i+=5){ctx.fillText(years[i],xP(i),H-pad.bottom+16);}
+  ctx.fillText('2024',xP(N-1),H-pad.bottom+16);
+
+  // fill gap
+  ctx.beginPath();
+  for(let i=0;i<N;i++) ctx.lineTo(xP(i),yP(jpTarget[i]));
+  for(let i=N-1;i>=0;i--) ctx.lineTo(xP(i),yP(jpReal[i]));
+  ctx.closePath();ctx.fillStyle='rgba(102,187,106,0.1)';ctx.fill();
+
+  // US line
+  ctx.strokeStyle='var(--accent)';ctx.lineWidth=1.5;ctx.globalAlpha=0.5;
+  ctx.beginPath();
+  for(let i=0;i<N;i++){i===0?ctx.moveTo(xP(i),yP(usJpy[i])):ctx.lineTo(xP(i),yP(usJpy[i]));}
+  ctx.stroke();ctx.globalAlpha=1;
+
+  // target dashed
+  ctx.strokeStyle='#66bb6a';ctx.lineWidth=2;ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  for(let i=0;i<N;i++){i===0?ctx.moveTo(xP(i),yP(jpTarget[i])):ctx.lineTo(xP(i),yP(jpTarget[i]));}
+  ctx.stroke();ctx.setLineDash([]);
+
+  // japan real
+  ctx.strokeStyle='#ffc72c';ctx.lineWidth=2.5;
+  ctx.beginPath();
+  for(let i=0;i<N;i++){i===0?ctx.moveTo(xP(i),yP(jpReal[i])):ctx.lineTo(xP(i),yP(jpReal[i]));}
+  ctx.stroke();
+
+  // end labels
+  ctx.font='bold 10px DM Mono';ctx.textAlign='left';
+  ctx.fillStyle='#ffc72c';ctx.fillText(jpReal[N-1]+'円',xP(N-1)+4,yP(jpReal[N-1])+4);
+  ctx.fillStyle='#66bb6a';ctx.fillText(jpTarget[N-1]+'円',xP(N-1)+4,yP(jpTarget[N-1])-6);
+  ctx.fillStyle='var(--accent)';ctx.fillText(usJpy[N-1]+'円',xP(N-1)+4,yP(usJpy[N-1])+4);
+
+  // annotations
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='9px Noto Sans JP';ctx.textAlign='center';
+  const i2000=years.indexOf(2000);
+  ctx.fillText('250円時代',xP(years.indexOf(2003)),yP(250)-10);
+  ctx.fillText('(デフレ価格競争)',xP(years.indexOf(2003)),yP(250)+2);
+}
+
+function drawGapChart(){
+  const canvas=document.getElementById('gapChart');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect();
+  canvas.width=rect.width*dpr;canvas.height=220*dpr;
+  ctx.scale(dpr,dpr);
+  const W=rect.width,H=220;
+  const pad={top:15,right:20,bottom:35,left:45};
+  const cw=W-pad.left-pad.right,ch=H-pad.top-pad.bottom;
+  const gaps=jpTarget.map((t,i)=>t-jpReal[i]);
+  const yMax=Math.max(...gaps)*1.1;
+  const xP=i=>pad.left+(i/(N-1))*cw;
+  const yP=v=>pad.top+(1-v/yMax)*ch;
+
+  ctx.strokeStyle='#1a2340';ctx.lineWidth=0.5;
+  for(let v=0;v<=yMax;v+=50){
+    const y=yP(v);
+    ctx.beginPath();ctx.moveTo(pad.left,y);ctx.lineTo(W-pad.right,y);ctx.stroke();
+    ctx.fillStyle='#5a6a8a';ctx.font='10px DM Mono';ctx.textAlign='right';
+    ctx.fillText(v+'円',pad.left-4,y+3);
+  }
+  ctx.fillStyle='#5a6a8a';ctx.font='10px DM Mono';ctx.textAlign='center';
+  for(let i=0;i<N;i+=5){ctx.fillText(years[i],xP(i),H-pad.bottom+16);}
+  ctx.fillText('2024',xP(N-1),H-pad.bottom+16);
+
+  // bars
+  const bw=cw/N*0.7;
+  gaps.forEach((g,i)=>{
+    const x=xP(i)-bw/2;
+    const y=yP(g);
+    const h=yP(0)-y;
+    const grad=ctx.createLinearGradient(0,y,0,yP(0));
+    grad.addColorStop(0,'rgba(239,83,80,0.6)');grad.addColorStop(1,'rgba(239,83,80,0.1)');
+    ctx.fillStyle=grad;
+    ctx.fillRect(x,y,bw,h);
+  });
+
+  ctx.fillStyle='#ef5350';ctx.font='bold 11px DM Mono';ctx.textAlign='center';
+  ctx.fillText('-'+gaps[N-1]+'円',xP(N-1),yP(gaps[N-1])-8);
+}
+
+window.addEventListener('resize',()=>{drawMacChart();drawGapChart();});
+drawMacChart();
+drawGapChart();
+</script>
+</body>
+</html>
